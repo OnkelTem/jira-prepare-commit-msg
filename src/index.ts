@@ -2,21 +2,26 @@
 
 import * as git from './git';
 import { loadConfig } from './config';
-import { error, log } from './log';
+import { debug, error } from './log';
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 (async (): Promise<void> => {
-  log('start');
+  debug('start');
 
   try {
     const config = await loadConfig();
     const gitRoot = git.getRoot(config.gitRoot);
     const branch = git.getBranchName(gitRoot);
 
+    if (!branch) {
+      debug('Cannot determine branch name, skipping.');
+      return
+    }
+
     const ignored = new RegExp(config.ignoredBranchesPattern || '^$', 'i');
 
     if (ignored.test(branch)) {
-      log('The branch is ignored by the configuration rule');
+      debug('The branch is ignored by the configuration rule');
       return;
     }
 
@@ -24,7 +29,7 @@ import { error, log } from './log';
 
     if (ticket === null) {
       if (config.ignoreBranchesMissingTickets) {
-        log('The branch does not contain a JIRA ticket and is ignored by the configuration rule');
+        debug('The branch does not contain a JIRA ticket and is ignored by the configuration rule');
       } else {
         error('The JIRA ticket ID not found');
       }
@@ -32,7 +37,7 @@ import { error, log } from './log';
       return;
     }
 
-    log(`The JIRA ticket ID is: ${ticket}`);
+    debug(`The JIRA ticket ID is: ${ticket}`);
 
     git.writeJiraTicket(ticket, config);
   } catch (err: unknown) {
@@ -43,5 +48,5 @@ import { error, log } from './log';
     }
   }
 
-  log('done');
+  debug('done');
 })();

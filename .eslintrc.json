@@ -18,17 +18,11 @@
     "plugin:@typescript-eslint/recommended",
     "plugin:@typescript-eslint/recommended-requiring-type-checking"
   ],
-  "plugins": [
-    "standard",
-    "prettier",
-    "@typescript-eslint"
-  ],
   "ignorePatterns": ["node_modules/", "bin/", "test/", "*.config.js"],
   "rules": {
     "max-len": ["error", {
       "code": 120,
       "tabWidth": 2
-    }],
-    "prettier/prettier": "error"
+    }]
   }
 }

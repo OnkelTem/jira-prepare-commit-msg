@@ -74,7 +74,7 @@ function replaceMessageByPattern(jiraTicket: string, message: string, pattern: s
 }
 
 function getMessageInfo(message: string, config: JPCMConfig): MessageInfo {
-  debug(`Original commit message: ${message}`);
+  debug(`getMessageInfo: original message: "${message.trim()}"`);
 
   const messageSections = message.split(gitVerboseStatusSeparator)[0];
   const lines = messageSections
@@ -265,7 +265,7 @@ export function getBranchName(gitRoot: string): string {
     args.push('--git-dir', gitRoot);
   }
 
-  args.push('symbolic-ref', '--short', 'HEAD');
+  args.push('rev-parse', '--abbrev-ref', 'HEAD');
 
   const { status, stderr, stdout } = cp.spawnSync('git', args, { cwd, encoding: 'utf-8' });
 
@@ -273,7 +273,14 @@ export function getBranchName(gitRoot: string): string {
     throw new Error(stderr.toString());
   }
 
-  return stdout.toString().trim();
+  const branchName = stdout.toString().trim()
+
+  // Don't return the "HEAD" string, it means we cannot resolve the actual branch like as during rebase
+  if (branchName === 'HEAD') return ''
+
+  debug(`gitBranchName detected: "${branchName}"`)
+
+  return branchName;
 }
 
 export function getJiraTicket(branchName: string, config: JPCMConfig): string | null {
@@ -295,19 +302,19 @@ export function writeJiraTicket(jiraTicket: string, config: JPCMConfig): void {
   // Read file with commit message
   try {
     message = fs.readFileSync(messageFilePath, { encoding: 'utf-8' });
-  } catch (ex) {
+  } catch {
     throw new Error(`Unable to read the file "${messageFilePath}".`);
   }
 
   const messageInfo = getMessageInfo(message, config);
   const messageWithJiraTicket = insertJiraTicketIntoMessage(messageInfo, jiraTicket, config);
 
-  debug(messageWithJiraTicket);
+  log(`Rewriting commit message to "${messageWithJiraTicket.trim()}"`);
 
   // Write message back to file
   try {
     fs.writeFileSync(messageFilePath, messageWithJiraTicket, { encoding: 'utf-8' });
-  } catch (ex) {
+  } catch {
     throw new Error(`Unable to write the file "${messageFilePath}".`);
   }
 }
